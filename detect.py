@@ -21,6 +21,7 @@ from object_detector import Category, ObjectDetector
 from object_detector import ObjectDetectorOptions
 import utils
 import requests
+import time 
 
 # Global variable to prevent consecutive requests
 midRequest = False
@@ -103,8 +104,9 @@ def run(model: str, camera_id: int, width: int, height: int, num_threads: int,
     for detection in detections:
       label = detection.categories[0].label
       consecutive_labels[label] = consecutive_labels.get(label, 0) + 1
-     
-      if consecutive_labels[label] > 10 and midRequest == False: 
+      value = consecutive_labels[label]
+      print("label [" + label + "] count: " + value)
+      if value > 10 and midRequest == False: 
         consecutive_labels.clear() 
         midRequest = True
         doRequest(label)
@@ -119,16 +121,21 @@ def run(model: str, camera_id: int, width: int, height: int, num_threads: int,
     if cv2.waitKey(1) == 27:
       break
     cv2.imshow('object_detector', image)
+    time.sleep(0.1) # sleep for 0.1 second to prevent overheat?
+
 
   cap.release()
   cv2.destroyAllWindows()
 
 def doRequest(label: str): 
+  print("sending label [" + label + "] to Heroku")
   url = 'https://trash-separator-api.herokuapp.com/node/sendLog'
   body = {"trash_can_id": "999", "category": "inorganic", "type": label}
 
   req = requests.post(url, data=body)
   print(req.text)
+  
+  time.sleep(1) #sleep 1 second after sending log
   global midRequest
   midRequest = False
 
