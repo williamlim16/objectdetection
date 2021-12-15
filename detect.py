@@ -24,6 +24,7 @@ import requests
 import time 
 import RPi.GPIO as GPIO
 from gpiozero import Servo
+import node_config
 
 # LOAD DICTIONARY, 0 - organic. 1 - inorganic
 def load_type(): 
@@ -248,7 +249,7 @@ def doRequest(label: str):
   else: 
     categoryStr = "organic"
     servoRight()
-  body = {"trash_can_id": "999", "category": categoryStr, "type": label}
+  body = {"node_token": node_config.NODE_TOKEN, "category": categoryStr, "type": label}
 
   req = requests.post(url, data=body)
   print(req.text)
