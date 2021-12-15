@@ -209,6 +209,7 @@ def run(model: str, camera_id: int, width: int, height: int, num_threads: int,
     if len(detections) == 0: 
       consecutive_labels.clear() 
       midRequest = False
+      servoMiddle()
         
     for detection in detections:
       label = detection.categories[0].label
@@ -254,7 +255,7 @@ def doRequest(label: str):
 
   time.sleep(4) #sleep 4 second after sending log
   servoMiddle() 
-  
+
   global midRequest
   midRequest = False
 
