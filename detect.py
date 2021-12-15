@@ -23,8 +23,99 @@ import utils
 import requests
 import time 
 
+# LOAD DICTIONARY, 0 - organic. 1 - inorganic
+def load_type(): 
+  dictionary = {
+    "person": 0,
+    "bicycle": 1,
+    "car": 1,
+    "motorcycle": 1,
+    "airplane": 1,
+    "bus": 1,
+    "train": 1,
+    "truck": 1,
+    "boat": 1,
+    "traffic light": 1,
+    "fire hydrant": 1,
+    "stop sign": 1,
+    "parking meter": 1,
+    "bench": 1,
+    "bird": 0,
+    "cat": 0,
+    "dog": 0,
+    "horse": 0,
+    "sheep": 0,
+    "cow": 0,
+    "elephant": 0,
+    "bear": 0,
+    "zebra": 0,
+    "giraffe": 0,
+    "backpack": 1,
+    "umbrella": 1,
+    "handbag": 1,
+    "tie": 1,
+    "suitcase": 1,
+    "frisbee": 1,
+    "skis":1,
+    "snowboard": 1,
+    "sports ball": 1,
+    "kite": 1,
+    "baseball bat": 1,
+    "baseball glove": 1,
+    "skateboard": 1,
+    "surfboard": 1,
+    "tennis racket": 1,
+    "bottle": 1,
+    "wine glass": 1,
+    "cup": 1,
+    "fork": 1,
+    "knife": 1,
+    "spoon": 1,
+    "bowl": 1,
+    "banana": 0,
+    "apple": 0,
+    "sandwich": 0,
+    "orange": 0,
+    "broccoli": 0,
+    "carrot": 0,
+    "hot dog": 0,
+    "pizza": 0,
+    "donut": 0,
+    "cake": 0,
+    "chair": 1,
+    "couch": 1,
+    "potted plant": 1,
+    "bed": 1,
+    "dining table": 1,
+    "toilet": 1,
+    "tv": 1,
+    "laptop": 1,
+    "mouse": 1, # mouse apa ini
+    "remote": 1,
+    "keyboard": 1,
+    "cell phone": 1,
+    "microwave": 1,
+    "oven": 1, 
+    "toaster": 1, 
+    "sink": 1, 
+    "refrigerator": 1, 
+    "book": 1, 
+    "clock": 1, 
+    "vase": 1, 
+    "scissors": 1, 
+    "teddy bear": 1, 
+    "hair drier": 1, 
+    "toothbrush": 1
+  }
+  return dictionary 
+
+
 # Global variable to prevent consecutive requests
 midRequest = False
+
+# Dictionary for organic and inorganic classification
+# 0 = organic, 1 = inorganic 
+type_dict = load_type()
 
 def run(model: str, camera_id: int, width: int, height: int, num_threads: int,
         enable_edgetpu: bool) -> None:
@@ -130,11 +221,16 @@ def run(model: str, camera_id: int, width: int, height: int, num_threads: int,
 def doRequest(label: str): 
   print("sending label [" + label + "] to Heroku")
   url = 'https://trash-separator-api.herokuapp.com/node/sendLog'
-  body = {"trash_can_id": "999", "category": "inorganic", "type": label}
+  category = type_dict.get(label, 0)
+  categoryStr = "organic"
+  if category == 1:
+    categoryStr = "inorganic" 
+    
+  body = {"trash_can_id": "999", "category": categoryStr, "type": label}
 
   req = requests.post(url, data=body)
   print(req.text)
-  
+
   time.sleep(1) #sleep 1 second after sending log
   global midRequest
   midRequest = False
