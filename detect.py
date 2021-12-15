@@ -17,10 +17,13 @@ import sys
 import time
 
 import cv2
-from object_detector import ObjectDetector
+from object_detector import Category, ObjectDetector
 from object_detector import ObjectDetectorOptions
 import utils
+import requests
 
+# Global variable to prevent consecutive requests
+midRequest = False
 
 def run(model: str, camera_id: int, width: int, height: int, num_threads: int,
         enable_edgetpu: bool) -> None:
@@ -60,6 +63,9 @@ def run(model: str, camera_id: int, width: int, height: int, num_threads: int,
       enable_edgetpu=enable_edgetpu)
   detector = ObjectDetector(model_path=model, options=options)
 
+  # variable for storing label predictions and for counter before sending request
+  consecutive_labels = {}
+
   # Continuously capture images from the camera and run inference
   while cap.isOpened():
     success, image = cap.read()
@@ -89,6 +95,26 @@ def run(model: str, camera_id: int, width: int, height: int, num_threads: int,
     cv2.putText(image, fps_text, text_location, cv2.FONT_HERSHEY_PLAIN,
                 font_size, text_color, font_thickness)
 
+    # Try to print detection from detections
+    if len(detections) == 0: 
+      consecutive_labels.clear() 
+      midRequest = False
+        
+    for detection in detections:
+      label = detection.categories[0].label
+      consecutive_labels[label] = consecutive_labels.get(label, 0) + 1
+     
+      if consecutive_labels[label] > 10 and midRequest == False: 
+        consecutive_labels.clear() 
+        midRequest = True
+        doRequest(label)
+
+      # category = detection.categories[0]
+      # class_name = category.label 
+      # probability = round(category.score, 2)
+      # result_detection = class_name + " (" + str(probability) + ")"
+      # print("label = " + result_detection)
+
     # Stop the program if the ESC key is pressed.
     if cv2.waitKey(1) == 27:
       break
@@ -97,6 +123,14 @@ def run(model: str, camera_id: int, width: int, height: int, num_threads: int,
   cap.release()
   cv2.destroyAllWindows()
 
+def doRequest(label: str): 
+  url = 'https://trash-separator-api.herokuapp.com/node/sendLog'
+  body = {"trash_can_id": "999", "category": "inorganic", "type": label}
+
+  req = requests.post(url, data=body)
+  print(req.text)
+  global midRequest
+  midRequest = False
 
 def main():
   parser = argparse.ArgumentParser(
