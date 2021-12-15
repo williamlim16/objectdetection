@@ -22,6 +22,8 @@ from object_detector import ObjectDetectorOptions
 import utils
 import requests
 import time 
+import RPi.GPIO as GPIO
+from gpiozero import Servo
 
 # LOAD DICTIONARY, 0 - organic. 1 - inorganic
 def load_type(): 
@@ -117,6 +119,22 @@ midRequest = False
 # 0 = organic, 1 = inorganic 
 type_dict = load_type()
 
+# Servo setup 
+servoPIN = 25
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(servoPIN, GPIO.OUT)
+p = GPIO.PWM(servoPIN, 50) # GPIO 17 for PWM with 50Hz
+p.start(2.5) # Initialization
+
+# Define servo movement
+def servoRight(): 
+  p.ChangeDutyCycle(10)
+def servoMiddle(): 
+  p.ChangeDutyCycle(100)
+def servoLeft(): 
+  p.ChangeDutyCycle(95)
+
+
 def run(model: str, camera_id: int, width: int, height: int, num_threads: int,
         enable_edgetpu: bool) -> None:
   """Continuously run inference on images acquired from the camera.
@@ -196,7 +214,7 @@ def run(model: str, camera_id: int, width: int, height: int, num_threads: int,
       label = detection.categories[0].label
       consecutive_labels[label] = consecutive_labels.get(label, 0) + 1
       value = consecutive_labels[label]
-      print("label [" + label + "] count: " + value)
+      print(f"label {label} | count: {value}")
       if value > 10 and midRequest == False: 
         consecutive_labels.clear() 
         midRequest = True
@@ -222,18 +240,26 @@ def doRequest(label: str):
   print("sending label [" + label + "] to Heroku")
   url = 'https://trash-separator-api.herokuapp.com/node/sendLog'
   category = type_dict.get(label, 0)
-  categoryStr = "organic"
+  categoryStr = ""
   if category == 1:
     categoryStr = "inorganic" 
-    
+    servoLeft() 
+  else: 
+    categoryStr = "organic"
+    servoRight()
   body = {"trash_can_id": "999", "category": categoryStr, "type": label}
 
   req = requests.post(url, data=body)
   print(req.text)
 
-  time.sleep(1) #sleep 1 second after sending log
+  time.sleep(4) #sleep 4 second after sending log
+  servoMiddle() 
+  
   global midRequest
   midRequest = False
+
+
+
 
 def main():
   parser = argparse.ArgumentParser(
